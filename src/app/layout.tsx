@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Outfit, Poppins, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { NavigationProgress } from "@/components/navigation-progress";
+import { Suspense } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -42,6 +44,9 @@ export default function RootLayout({
         )}
       >
         <Providers>
+          <Suspense fallback={null}>
+            <NavigationProgress />
+          </Suspense>
           <div className="flex min-h-screen flex-col">
             <main className="flex-1 transition-all duration-300">
               {children}

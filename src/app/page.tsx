@@ -7,10 +7,11 @@ import { useTheme } from "next-themes"
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import {
   Menu, X, ArrowRight, Star, Zap, Shield,
-  Smartphone, Heart, Globe, ChevronRight,
+  Smartphone, Heart, Globe, ChevronRight, ChevronDown,
   Download, Instagram, Twitter, Facebook,
   Moon, Sun, CheckCircle2, Play, Search,
-  Bell, Home, User, Utensils, MessageCircle
+  Bell, Home, User, Utensils, MessageCircle, MapPin,
+  Github, Linkedin
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
