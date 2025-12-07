@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Users, ShoppingBag, DollarSign, ArrowUpRight, ArrowDownRight, MoreHorizontal } from "lucide-react";
+import { TrendingUp, Users, ShoppingBag, DollarSign, ArrowUpRight, ArrowDownRight, MoreHorizontal, Store } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -49,17 +49,21 @@ const SimpleLineChart = ({ data, color = "#84bd93" }: { data: number[], color?: 
 };
 
 // Custom SVG Area Chart for Main Dashboard
-const MainAreaChart = () => {
-  const data = [30, 45, 35, 55, 45, 70, 60, 80, 75, 90, 85, 100];
+const MainAreaChart = ({ monthlyData }: { monthlyData: { month: string; revenue: number; orders: number }[] }) => {
+  const data = monthlyData.length > 0 ? monthlyData.map(m => m.revenue) : [0];
   const height = 300;
   const width = 800;
-  const max = Math.max(...data);
+  const max = Math.max(...data, 1);
 
   const points = data.map((val, i) => {
-    const x = (i / (data.length - 1)) * width;
-    const y = height - (val / max) * (height * 0.8); // Leave some top padding
+    const x = (i / Math.max(data.length - 1, 1)) * width;
+    const y = height - (val / max) * (height * 0.8);
     return `${x},${y}`;
   }).join(" ");
+
+  const months = monthlyData.length > 0
+    ? monthlyData.map(m => m.month)
+    : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   return (
     <div className="w-full h-[350px] relative">
@@ -107,7 +111,7 @@ const MainAreaChart = () => {
 
         {/* Data Points */}
         {data.map((val, i) => {
-          const x = (i / (data.length - 1)) * width;
+          const x = (i / Math.max(data.length - 1, 1)) * width;
           const y = height - (val / max) * (height * 0.8);
           return (
             <motion.circle
@@ -128,7 +132,7 @@ const MainAreaChart = () => {
 
       {/* X-Axis Labels */}
       <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-muted-foreground translate-y-6">
-        {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((month) => (
+        {months.map((month) => (
           <span key={month}>{month}</span>
         ))}
       </div>
@@ -154,46 +158,52 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
+  // Format change percentage with sign
+  const formatChange = (change: number) => {
+    const sign = change >= 0 ? '+' : '';
+    return `${sign}${change}%`;
+  };
+
   const stats = [
     {
       title: "Total Revenue",
-      value: data ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(data.totalRevenue) : "$0.00",
-      change: "+20.1%", // Placeholder calculation
-      trend: "up",
+      value: data ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(data.totalRevenue) : "Rp0",
+      change: data ? formatChange(data.revenueChange) : "0%",
+      trend: data?.revenueChange >= 0 ? "up" : "down",
       icon: DollarSign,
       color: "text-primary",
       bg: "bg-primary/10",
-      chartData: data?.revenueTrend || [40, 35, 55, 45, 70, 65, 80]
+      chartData: data?.revenueTrend?.length > 0 ? data.revenueTrend : [0]
     },
     {
-      title: "Active Users",
+      title: "Total Users",
       value: data ? data.totalUsers.toLocaleString() : "0",
-      change: "+12%",
-      trend: "up",
+      change: data ? formatChange(data.usersChange) : "0%",
+      trend: data?.usersChange >= 0 ? "up" : "down",
       icon: Users,
       color: "text-orange-500",
       bg: "bg-orange-500/10",
-      chartData: [20, 40, 30, 70, 50, 90, 100]
+      chartData: data?.usersTrend?.length > 0 ? data.usersTrend : [0]
     },
     {
       title: "Total Orders",
       value: data ? data.totalOrders.toLocaleString() : "0",
-      change: "+19%",
-      trend: "up",
+      change: data ? formatChange(data.ordersChange) : "0%",
+      trend: data?.ordersChange >= 0 ? "up" : "down",
       icon: ShoppingBag,
       color: "text-yellow-500",
       bg: "bg-yellow-500/10",
-      chartData: [30, 20, 50, 40, 60, 50, 70]
+      chartData: data?.ordersTrend?.length > 0 ? data.ordersTrend : [0]
     },
     {
-      title: "Active Now",
-      value: "573", // Placeholder
-      change: "-5%",
-      trend: "down",
-      icon: TrendingUp,
+      title: "Total Stores",
+      value: data ? data.totalStores.toLocaleString() : "0",
+      change: "-",
+      trend: "up",
+      icon: Store,
       color: "text-green-500",
       bg: "bg-green-500/10",
-      chartData: [60, 50, 40, 50, 40, 30, 20]
+      chartData: [1]
     },
   ];
 
@@ -301,7 +311,7 @@ export default function AdminDashboard() {
               </Button>
             </CardHeader>
             <CardContent className="pl-2">
-              <MainAreaChart />
+              <MainAreaChart monthlyData={data?.monthlyChartData || []} />
             </CardContent>
           </Card>
         </motion.div>
@@ -330,7 +340,7 @@ export default function AdminDashboard() {
                       </p>
                     </div>
                     <div className="ml-auto font-bold text-sm">
-                      {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(order.total_price)}
+                      {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(order.total_price || 0)}
                     </div>
                   </div>
                 ))}

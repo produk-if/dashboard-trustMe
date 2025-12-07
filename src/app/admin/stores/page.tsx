@@ -1,18 +1,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getStores } from './actions';
+import { getStores, updateStoreStatus } from './actions';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Phone, RefreshCw, Loader2 } from "lucide-react";
+import { MapPin, Phone, RefreshCw, Loader2, Power, PowerOff } from "lucide-react";
 import { LoadingPage } from "@/components/ui/loading";
 
 export default function StoresPage() {
   const [stores, setStores] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [togglingStore, setTogglingStore] = useState<string | null>(null);
 
   const fetchStores = async (refresh = false) => {
     if (refresh) {
@@ -29,6 +30,19 @@ export default function StoresPage() {
   useEffect(() => {
     fetchStores();
   }, []);
+
+  const handleToggleStatus = async (storeId: string, currentStatus: boolean) => {
+    setTogglingStore(storeId);
+    const result = await updateStoreStatus(storeId, !currentStatus);
+    if (result.success) {
+      setStores(stores.map(store =>
+        store.store_id === storeId
+          ? { ...store, is_active: !currentStatus }
+          : store
+      ));
+    }
+    setTogglingStore(null);
+  };
 
   if (isLoading) {
     return <LoadingPage message="Loading stores data..." />;
@@ -75,6 +89,7 @@ export default function StoresPage() {
                 <TableHead>Location</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Menus</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -106,6 +121,29 @@ export default function StoresPage() {
                   </TableCell>
                   <TableCell>
                     {store._count.menus} Items
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant={store.is_active ? "destructive" : "default"}
+                      size="sm"
+                      onClick={() => handleToggleStatus(store.store_id, store.is_active)}
+                      disabled={togglingStore === store.store_id}
+                      className="gap-2"
+                    >
+                      {togglingStore === store.store_id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : store.is_active ? (
+                        <>
+                          <PowerOff className="h-4 w-4" />
+                          Deactivate
+                        </>
+                      ) : (
+                        <>
+                          <Power className="h-4 w-4" />
+                          Activate
+                        </>
+                      )}
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
